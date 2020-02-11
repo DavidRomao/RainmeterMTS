@@ -1,14 +1,19 @@
 function get_day_type(dateTable)
-    if (dateTable.wday == 6) then
+    if (dateTable.wday == 7) then
         return '2'
     end
-    if (dateTable.wday == 0) then
+    if (dateTable.wday == 1) then
         return '3'
     end
     return '1'
 end
 
-function get_season()
+function get_season(dateTable)
+    if (dateTable.month >= 7 and dateTable.month <=9 ) then
+        if(dateTable.day >= 15 and dateTable.day <= 7) then
+            return '1'
+        end
+    end
     return '2'
 end
 
@@ -29,21 +34,19 @@ function Initialize()
     local station = SELF:GetNumberOption('station')
 
     local dateTable = os.date("*t", os.time()) 
-    
     day_type = get_day_type(dateTable)
 
-    season = get_season()
+    season = get_season(dateTable)
 
-
+    print(string.format("Config : season=%s, day_type=%s, line=%s, station_id=%d",season, day_type, line, station ))
     if not file then
         print("ReadFile: unable to open file at " .. fname)
         return
     else
-        print("File opened")
         -- read the whole json file and parse it
         data = json.decode(file:read("*all"))
         file:close()
-
+        times = data[line][day_type][season]['times']
         station = get_station_by_id(data[line][day_type][season]['stations'], station)
         time_diff = station['time_diff']
         SKIN:Bang('!SetOption', id .. 'LineTitleMeter', 'Text', data['lines'][tonumber(line)])
@@ -64,7 +67,6 @@ end
 function get_station_by_id(stations, id)
     for idx,value in ipairs(stations) do
         if value['id'] == id then
-            print('found station with id ', id)
             return value
         end
     end
@@ -84,10 +86,7 @@ function Update()
 
     local secs = get_current_seconds()
 
-    local times = data[line][day_type][season]['times']
-
     local idx = get_value(times, secs)
-    print('idx ' , idx)
 
     local hours = (times[idx] + time_diff * 60) / 3600  
     local minutes = (hours % 1) * 60  
